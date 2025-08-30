@@ -26,32 +26,20 @@
 namespace VehicleConstants {
     const double GRAVITY = 9.81; // m/s² (same for all)
 
-    // IndyCar constants
-    namespace IndyCar {
-        const double VEHICLE_MASS = 700.0 + 60.0 + 76.0; // kg (car + fuel + driver)
-        const double FRONT_TRACK = 1.753; // m
-        const double REAR_TRACK = 1.638; // m  
-        const double WHEELBASE = 3.048; // m
-        const double YAW_INERTIA = 1100.0; // kg⋅m² (estimated for IndyCar)
-        const double CG_FROM_FRONT = 1.3; // m (43% of wheelbase, typical for IndyCar)
+    namespace GP2 {
+        const double VEHICLE_MASS = 515.0 + 70.0 + 75.0; // kg (car + fuel + driver, 1994 regulations)
+        const double FRONT_TRACK = 1.8; // m (typical 1994 F1)
+        const double REAR_TRACK = 1.68; // m  
+        const double WHEELBASE = 3.2; // m (typical 1994 F1)
+        const double YAW_INERTIA = 900.0; // kg⋅m² (lighter than IndyCar)
+        const double CG_FROM_FRONT = 1.44; // m (45% of wheelbase, F1 is more front-biased)
         const double CG_FROM_REAR = WHEELBASE - CG_FROM_FRONT; // m
-        
-        const double TIRE_FORCE_SCALE = 13000.0; // Newtons per game unit (estimate)
-        const double MAX_GAME_FORCE_UNITS = 4000.0; // Maximum expected force in game units
-    }
 
-    // NASCAR constants
-    namespace NASCAR {
-        const double VEHICLE_MASS = 1400.0 + 80.0 + 76.0; // kg (heavier stock car + fuel + driver)
-        const double FRONT_TRACK = 1.524; // m (60 inches, typical NASCAR)
-        const double REAR_TRACK = 1.524; // m (same as front for NASCAR)
-        const double WHEELBASE = 2.794; // m (110 inches, typical NASCAR)
-        const double YAW_INERTIA = 2000.0; // kg⋅m² (higher for heavier NASCAR car)
-        const double CG_FROM_FRONT = 1.47; // m (52.5% of wheelbase, NASCAR is more rear-biased)
-        const double CG_FROM_REAR = WHEELBASE - CG_FROM_FRONT; // m
-        
-        const double TIRE_FORCE_SCALE = 13000.0; // Newtons per game unit (estimate)
-        const double MAX_GAME_FORCE_UNITS = 4000.0; // Maximum expected force in game units
+        // Calculate scale from your observation: 4G = 460,000 raw units
+        // 4G = 4 * 9.81 * 660kg = 25,924N total lateral force
+        // Front wheels typically carry ~45% during cornering = ~11,666N
+        // Scale = 11,666N / 460,000 raw units = 0.0254 N per raw unit
+        const double TIRE_FORCE_SCALE = 0.0512; // Newtons per raw game unit ESTIMATE
     }
 }
 
@@ -78,73 +66,52 @@ std::wstring GameToLower(const std::wstring& str) {
 GameConstants GetGameConstants() {
     std::wstring gameVersionLower = GameToLower(targetGameVersion);
 
-    if (gameVersionLower == L"icr2dos" || gameVersionLower == L"icr2rend") {
-        // Use IndyCar constants
+    if (gameVersionLower == L"x86gp2") {
         return {
-            VehicleConstants::IndyCar::VEHICLE_MASS,
-            VehicleConstants::IndyCar::FRONT_TRACK,
-            VehicleConstants::IndyCar::REAR_TRACK,
-            VehicleConstants::IndyCar::WHEELBASE,
-            VehicleConstants::IndyCar::YAW_INERTIA,
-            VehicleConstants::IndyCar::CG_FROM_FRONT,
-            VehicleConstants::IndyCar::CG_FROM_REAR,
-            VehicleConstants::IndyCar::TIRE_FORCE_SCALE,
-            VehicleConstants::IndyCar::MAX_GAME_FORCE_UNITS
-        };
-    }
-    else if (gameVersionLower == L"nascar1" || gameVersionLower == L"nascar2") {
-        // Use NASCAR constants
-        return {
-            VehicleConstants::NASCAR::VEHICLE_MASS,
-            VehicleConstants::NASCAR::FRONT_TRACK,
-            VehicleConstants::NASCAR::REAR_TRACK,
-            VehicleConstants::NASCAR::WHEELBASE,
-            VehicleConstants::NASCAR::YAW_INERTIA,
-            VehicleConstants::NASCAR::CG_FROM_FRONT,
-            VehicleConstants::NASCAR::CG_FROM_REAR,
-            VehicleConstants::NASCAR::TIRE_FORCE_SCALE,
-            VehicleConstants::NASCAR::MAX_GAME_FORCE_UNITS
+            VehicleConstants::GP2::VEHICLE_MASS,
+            VehicleConstants::GP2::FRONT_TRACK,
+            VehicleConstants::GP2::REAR_TRACK,
+            VehicleConstants::GP2::WHEELBASE,
+            VehicleConstants::GP2::YAW_INERTIA,
+            VehicleConstants::GP2::CG_FROM_FRONT,
+            VehicleConstants::GP2::CG_FROM_REAR,
+            VehicleConstants::GP2::TIRE_FORCE_SCALE,
         };
     }
     else {
-        // Default to IndyCar if unknown
+        // Default to GP2 if unknown
         return {
-            VehicleConstants::IndyCar::VEHICLE_MASS,
-            VehicleConstants::IndyCar::FRONT_TRACK,
-            VehicleConstants::IndyCar::REAR_TRACK,
-            VehicleConstants::IndyCar::WHEELBASE,
-            VehicleConstants::IndyCar::YAW_INERTIA,
-            VehicleConstants::IndyCar::CG_FROM_FRONT,
-            VehicleConstants::IndyCar::CG_FROM_REAR,
-            VehicleConstants::IndyCar::TIRE_FORCE_SCALE,
-            VehicleConstants::IndyCar::MAX_GAME_FORCE_UNITS
+            VehicleConstants::GP2::VEHICLE_MASS,
+            VehicleConstants::GP2::FRONT_TRACK,
+            VehicleConstants::GP2::REAR_TRACK,
+            VehicleConstants::GP2::WHEELBASE,
+            VehicleConstants::GP2::YAW_INERTIA,
+            VehicleConstants::GP2::CG_FROM_FRONT,
+            VehicleConstants::GP2::CG_FROM_REAR,
+            VehicleConstants::GP2::TIRE_FORCE_SCALE,
         };
     }
 }
 
 // Helper function to convert raw tire data to usable data
-double convertTireForceToNewtons(int16_t tire_force_raw) {
+double convertTireForceToNewtons(int32_t tire_force_raw) {
     // DON'T remove the sign - preserve it!
     GameConstants constants = GetGameConstants();
 
     double force_with_sign = static_cast<double>(tire_force_raw);
-    return force_with_sign * constants.TIRE_FORCE_SCALE / constants.MAX_GAME_FORCE_UNITS;
+    return force_with_sign * constants.TIRE_FORCE_SCALE;
 }
 
-int getTurnDirection(int16_t lf, int16_t rf, int16_t lr, int16_t rr) {
-    // Determine if we're turning left or right based on force signs
-    // Most of your forces will have the same sign during a turn
+int getTurnDirection(int32_t lf, int32_t rf) {
     int negative_count = 0;
     if (lf < 0) negative_count++;
     if (rf < 0) negative_count++;
-    if (lr < 0) negative_count++;
-    if (rr < 0) negative_count++;
 
-    if (negative_count >= 2) {
-        return -1; // Left turn (negative forces dominant)
+    if (negative_count >= 1) {
+        return -1; // Left turn
     }
     else {
-        return 1;  // Right turn (positive forces dominant)
+        return 1;  // Right turn
     }
 }
 
@@ -158,54 +125,58 @@ bool CalculateVehicleDynamics(const RawTelemetry& current, RawTelemetry& previou
     GameConstants constants = GetGameConstants();
 
     // Convert units
-    double speed_ms = current.speed_mph * 0.44704; // mph to m/s
+    double speed_ms = current.gp2_speedKmh * 0.277778; // mph to m/s
 
     // Convert steering wheel angle to actual wheel angle
-    // Typical IndyCar steering ratio is around 12:1 to 15:1
+    // Typical steering ratio is around 12:1 to 15:1
     const double STEERING_RATIO = 15.0;
-    double wheel_angle_deg = current.steering_deg / STEERING_RATIO;
+    double wheel_angle_deg = current.gp2_stWheelAngle / STEERING_RATIO;
     double wheel_angle_rad = wheel_angle_deg * M_PI / 180.0;
 
+    
     // Force Assignments
-    out.force_lf = static_cast<int16_t>(current.tiremaglat_lf);
-    out.force_rf = static_cast<int16_t>(current.tiremaglat_rf);
-    out.force_lr = static_cast<int16_t>(current.tiremaglat_lr);
-    out.force_rr = static_cast<int16_t>(current.tiremaglat_rr);
-    out.forceLong_lf = static_cast<int16_t>(current.tiremaglong_lf);
-    out.forceLong_rf = static_cast<int16_t>(current.tiremaglong_rf);
-    out.forceLong_lr = static_cast<int16_t>(current.tiremaglong_lr);
-    out.forceLong_rr = static_cast<int16_t>(current.tiremaglong_rr);
+    out.force_lf = static_cast<int32_t>(current.gp2_magLat_lf);  
+    out.force_rf = static_cast<int32_t>(current.gp2_magLat_rf);
+    //out.force_lr = static_cast<int16_t>(current.tiremaglat_lr);
+    //out.force_rr = static_cast<int16_t>(current.tiremaglat_rr);
+    out.forceLong_lf = static_cast<int32_t>(current.gp2_magLong_lf);
+    out.forceLong_rf = static_cast<int32_t>(current.gp2_magLong_rf);
+    //out.forceLong_lr = static_cast<int16_t>(current.tiremaglong_lr);
+    //out.forceLong_rr = static_cast<int16_t>(current.tiremaglong_rr);
 
     // Convert tire forces to "actual" Newtons
     // In the future if we find real forces we can replace this
     double force_lf_N = convertTireForceToNewtons(out.force_lf);
     double force_rf_N = convertTireForceToNewtons(out.force_rf);
-    double force_lr_N = convertTireForceToNewtons(out.force_lr);
-    double force_rr_N = convertTireForceToNewtons(out.force_rr);
+    //double force_lr_N = convertTireForceToNewtons(out.force_lr);
+    //double force_rr_N = convertTireForceToNewtons(out.force_rr);
     double forceLong_lf_N = convertTireForceToNewtons(out.forceLong_lf);
     double forceLong_rf_N = convertTireForceToNewtons(out.forceLong_rf);
-    double forceLong_lr_N = convertTireForceToNewtons(out.forceLong_lr);
-    double forceLong_rr_N = convertTireForceToNewtons(out.forceLong_rr);
+    //double forceLong_lr_N = convertTireForceToNewtons(out.forceLong_lr);
+    //double forceLong_rr_N = convertTireForceToNewtons(out.forceLong_rr);
+
+    
 
     out.frontLeftForce_N = convertTireForceToNewtons(out.force_lf);
     out.frontRightForce_N = convertTireForceToNewtons(out.force_rf);
     out.frontLeftLong_N = convertTireForceToNewtons(out.forceLong_lf);
     out.frontRightLong_N = convertTireForceToNewtons(out.forceLong_rf);
 
+    
     // CALC 1
     //===== LATERAL FORCE CALC ======
     
     // Calculate sum of lateral force
-    double total_lateral_force_N = force_lf_N + force_rf_N + force_lr_N + force_rr_N;
+    double total_lateral_force_N = force_lf_N + force_rf_N;
 
     // Determine turn direction and apply sign
-    int turn_direction = getTurnDirection(out.force_lf, out.force_rf, out.force_lr, out.force_rr);
+    int turn_direction = getTurnDirection(out.force_lf, out.force_rf);
 
     // Calculate lateral acceleration: F = ma, so a = F/m
-    double lateral_acceleration = (total_lateral_force_N * turn_direction) / constants.VEHICLE_MASS;
+    double lateral_acceleration = total_lateral_force_N / constants.VEHICLE_MASS;
 
     // Calculate total lateral force (maybe unneeded)
-    out.totalLateralForce = out.force_lf + out.force_rf + out.force_lr + out.force_rr;
+    out.totalLateralForce = out.force_lf + out.force_rf;
     
     // Convert to G-force
     out.lateralG = lateral_acceleration / VehicleConstants::GRAVITY;
@@ -221,6 +192,7 @@ bool CalculateVehicleDynamics(const RawTelemetry& current, RawTelemetry& previou
         out.directionVal = -10000; // Right (negative totalLateralForce)
     }
 
+    /*
     // CALC 2
     //===== SLIP ANGLE ======
 
@@ -297,24 +269,8 @@ bool CalculateVehicleDynamics(const RawTelemetry& current, RawTelemetry& previou
     else {
         out.slip = 0.0; // No slip when not moving or turning
     }
+    */
 
-    // Apply bounds to outputs
-    out.lateralG = std::clamp(out.lateralG, -8.0, 8.0); // Reasonable G range for IndyCar
-    //out.yaw = std::clamp(out.yaw, -180.0, 180.0); // Limit yaw acceleration
-    out.slip = std::clamp(out.slip, -45.0, 45.0); // Limit slip angle
-
-    // Calculate force magnitude for FFB
-    // Scale based on absolute lateral G, with max at 4G (typical for IndyCar cornering)
-    double gForceScale = std::clamp(std::abs(out.lateralG) / 4.0, 0.0, 1.0);
-
-    // Apply speed scaling (reduce forces at low speeds like your other calculations)
-    double speedScale = (current.speed_mph < 20.0) ? 0.0 : std::min((current.speed_mph - 20.0) / 40.0, 1.0);
-
-    out.forceMagnitude = static_cast<int>(gForceScale * speedScale * 10000.0);
-
-    // Store basic telemetry for output
-    out.speedMph = current.speed_mph;
-    out.steeringDeg = current.steering_deg;
 
     previous = current;
     return true;

@@ -1,6 +1,5 @@
-// FFB for Papy Sims
+// FFB for Grand Prix II x86 version
 // I don't know what I am doing!
-// Beta 1.0.1 Don't forget to update this down below
 
 
 // File: main.cpp
@@ -90,35 +89,68 @@ DIJOYSTATE2 js; // No idea what this is
 
 // === Shared Telemetry Display Data ===
 struct TelemetryDisplayData {
-    // Raw telemetry
-    double dlat = 0.0;
-    double dlong = 0.0;
-    double rotation_deg = 0.0;
-    double speed_mph = 0.0;
-    double steering_deg = 0.0;
-    double steering_raw = 0.0;
-    double long_force = 0.0;
+    //GP2
+    
+    double gp2_structSize = 0.0;
+    
+    double gp2_isInRace = 0.0;
+    double gp2_isPlayer = 0.0;
+    double gp2_isPaused = 0.0;
+    double gp2_isReplay = 0.0;
+    double gp2_isX86MenuOn = 0.0;
+    int gp2_deviceID = 0;
 
-    // Tire loads
-    double tireload_lf = 0.0;
-    double tireload_rf = 0.0;
-    double tireload_lr = 0.0;
-    double tireload_rr = 0.0;
+    double gp2_speedKmh = 0.0;
+    double gp2_stWheelAngle = 0.0;
+    double gp2_tyreTurnAngle = 0.0;
+    double gp2_slipAngleFront = 0.0;
+    double gp2_slipAngleRear = 0.0;
 
-    // Tire magnitudes
-    double tiremaglat_lf = 0.0;
-    double tiremaglat_rf = 0.0;
-    double tiremaglat_lr = 0.0;
-    double tiremaglat_rr = 0.0;
-    double tiremaglong_lf = 0.0;
-    double tiremaglong_rf = 0.0;
-    double tiremaglong_lr = 0.0;
-    double tiremaglong_rr = 0.0;
+    float gp2_magLat_lf = 0.0;
+    float gp2_magLat_rf = 0.0;
+
+    float gp2_magLong_lf = 0.0;
+    float gp2_magLong_rf = 0.0;
+
+    double gp2_surfaceType_lf = 0.0;
+    double gp2_surfaceType_rf = 0.0;
+    double gp2_surfaceType_lr = 0.0;
+    double gp2_surfaceType_rr = 0.0;
+
+    double gp2_rideHeights_lf = 0.0;
+    double gp2_rideHeights_rf = 0.0;
+    double gp2_rideHeights_lr = 0.0;
+    double gp2_rideHeights_rr = 0.0;
+
+    double gp2_wheelSpin_13C_lf = 0.0;
+    double gp2_wheelSpin_13C_rf = 0.0;
+    double gp2_wheelSpin_13C_lr = 0.0;
+    double gp2_wheelSpin_13C_rr = 0.0;
+
+    double gp2_notOnDamper_lf = 0.0;
+    double gp2_notOnDamper_rf = 0.0;
+    double gp2_notOnDamper_lr = 0.0;
+    double gp2_notOnDamper_rr = 0.0;
+
+    double gp2_calc_248_lf = 0.0;
+    double gp2_calc_248_rf = 0.0;
+    double gp2_calc_248_lr = 0.0;
+    double gp2_calc_248_rr = 0.0;
+
+    double gp2_wheel_2AC_lf = 0.0;
+    double gp2_wheel_2AC_rf = 0.0;
+    double gp2_wheel_2AC_lr = 0.0;
+    double gp2_wheel_2AC_rr = 0.0;
+
+
+    
 
     // Vehicle Dynamics calculated data
     double vd_lateralG = 0.0;
     double vd_frontLeftForce_N = 0.0;
     double vd_frontRightForce_N = 0.0;
+    double vd_frontLeftLong_N = 0.0;
+    double vd_frontRightLong_N = 0.0;
     int vd_directionVal = 0;
     //double vd_yaw = 0.0;
     double vd_slip = 0.0;
@@ -142,6 +174,7 @@ std::mutex displayMutex;
 TelemetryDisplayData displayData;
 std::atomic<double> currentSpeed = 0.0;
 int g_currentFFBForce = 0;
+int g_currentFrontLoad = 0;
 
 // Check Admin rights
 bool IsRunningAsAdmin() {
@@ -209,7 +242,7 @@ void SetConsoleWindowSize() {
         LogMessage(L"[WARNING] Failed to set console buffer size");
     }
 
-    SMALL_RECT windowSize = { 0, 0, 119, 39 };  // window size (note: 119, not 120)
+    SMALL_RECT windowSize = { 0, 0, 119, 40 };  // window size (note: 119, not 120)
     if (!SetConsoleWindowInfo(hOut, TRUE, &windowSize)) {
         LogMessage(L"[WARNING] Failed to set console window size");
     }
@@ -302,7 +335,7 @@ void DisplayTelemetry(const TelemetryDisplayData& displayData, double masterForc
         };
 
     // Header section
-    std::wcout << padLine(L"PAPY FFB Program Version 1.0.1 BETA") << L"\n";
+    std::wcout << padLine(L"GP2 FFB Program Version 0.2.0 BETA") << L"\n";
     std::wcout << padLine(L"") << L"\n";
     std::wcout << padLine(L"Connected Device: " + targetDeviceName) << L"\n";
     std::wcout << padLine(L"Game: " + targetGameVersion) << L"\n";
@@ -317,62 +350,164 @@ void DisplayTelemetry(const TelemetryDisplayData& displayData, double masterForc
     std::wcout << padLine(L"      == Raw Data ==") << L"\n";
     std::wcout << padLine(L"") << L"\n";
 
+    /*
+    // GP2 Program States
     ss.str(L""); ss.clear();
-    ss << L"Latitude: " << std::setw(10) << displayData.dlat << L"   Longitude: " << std::setw(10) << displayData.dlong;
+    ss << L"In Race: " << std::setw(10) << displayData.gp2_isInRace;
     std::wcout << padLine(ss.str()) << L"\n";
 
     ss.str(L""); ss.clear();
-    ss << L"Centerline Rotation: " << std::setw(8) << displayData.rotation_deg << L" deg";
+    ss << L"Is Player: " << std::setw(10) << displayData.gp2_isPlayer;
     std::wcout << padLine(ss.str()) << L"\n";
 
     ss.str(L""); ss.clear();
-    ss << L"Speed: " << std::setw(8) << displayData.speed_mph << L" mph";
+    ss << L"Is Paused: " << std::setw(10) << displayData.gp2_isPaused;
     std::wcout << padLine(ss.str()) << L"\n";
 
     ss.str(L""); ss.clear();
-    ss << L"Steering Raw: " << std::setw(10) << displayData.steering_raw;
+    ss << L"Is Replay: " << std::setw(10) << displayData.gp2_isReplay;
     std::wcout << padLine(ss.str()) << L"\n";
 
     ss.str(L""); ss.clear();
-    ss << L"Steering Lock Degree: " << std::setw(8) << displayData.steering_deg;
+    ss << L"x86 Menu: " << std::setw(10) << displayData.gp2_isX86MenuOn;
     std::wcout << padLine(ss.str()) << L"\n";
-    std::wcout << padLine(L"") << L"\n";
+    */
+
+    std::wcout << padLine(L"") << L"\n";  // Empty line
+
+
+   // ss.str(L""); ss.clear();
+   // ss << L"Device Name: " << std::setw(10) << displayData.gp2_deviceID;
+   // std::wcout << padLine(ss.str()) << L"\n";
+
+
+    ss.str(L""); ss.clear();
+    ss << L"Speed: " << std::setw(8) << displayData.gp2_speedKmh << L" kph";
+    std::wcout << padLine(ss.str()) << L"\n";
+
+    ss.str(L""); ss.clear();
+    ss << L"Steering Wheel Angle: " << std::setw(10) << displayData.gp2_stWheelAngle;
+    std::wcout << padLine(ss.str()) << L"\n";
+
+    ss.str(L""); ss.clear();
+    ss << L"Tyre Turn Angle: " << std::setw(10) << displayData.gp2_tyreTurnAngle;
+    std::wcout << padLine(ss.str()) << L"\n";
+
+    ss.str(L""); ss.clear();
+    ss << L"Slip Angle Front: " << std::setw(10) << displayData.gp2_slipAngleFront;
+    std::wcout << padLine(ss.str()) << L"\n";
+
+    ss.str(L""); ss.clear();
+    ss << L"Slip Angle Rear: " << std::setw(10) << displayData.gp2_slipAngleRear;
+    std::wcout << padLine(ss.str()) << L"\n";
+
+
+    std::wcout << padLine(L"") << L"\n";  // Empty line
 
     // Tire loads section
-    std::wcout << padLine(L"      == Tire Loads ==") << L"\n";
+    std::wcout << padLine(L"      == Tire/Suspension Data ==") << L"\n";
     std::wcout << padLine(L"") << L"\n";
     std::wcout << padLine(L"      Left Front      Right Front") << L"\n";
 
+
+    //Raw Forces
+    /*
     ss.str(L""); ss.clear();
-    ss << std::setw(10) << L"long: " << static_cast<int16_t>(displayData.tiremaglong_lf) << L"           " << std::setw(10) << static_cast<int16_t>(displayData.tiremaglong_rf);
+    ss << std::setw(10) << L"Mag Lat: " << static_cast<int>(displayData.gp2_magLat_lf) << L"           " << std::setw(10) << static_cast<int>(displayData.gp2_magLat_rf);
     std::wcout << padLine(ss.str()) << L"\n";
     std::wcout << padLine(L"") << L"\n";
 
     ss.str(L""); ss.clear();
-    ss << std::setw(10) << L"lat: " << static_cast<int16_t>(displayData.tiremaglat_lf) << L"           " << std::setw(10) << static_cast<int16_t>(displayData.tiremaglat_rf);
+    ss << std::setw(10) << L"Mag Long: " << static_cast<int>(displayData.gp2_magLong_lf) << L"           " << std::setw(10) << static_cast<int>(displayData.gp2_magLong_rf);
     std::wcout << padLine(ss.str()) << L"\n";
     std::wcout << padLine(L"") << L"\n";
+    */
+
+    ss.str(L""); ss.clear();
+    ss << std::setw(10) << L"Mag Lat: " << static_cast<int>(displayData.vd_frontLeftForce_N) << L"           " << std::setw(10) << static_cast<int>(displayData.vd_frontRightForce_N);
+    std::wcout << padLine(ss.str()) << L"\n";
+    std::wcout << padLine(L"") << L"\n";
+
+    ss.str(L""); ss.clear();
+    ss << std::setw(10) << L"Mag Long: " << static_cast<int>(displayData.vd_frontLeftLong_N) << L"           " << std::setw(10) << static_cast<int>(displayData.vd_frontRightLong_N);
+    std::wcout << padLine(ss.str()) << L"\n";
+    std::wcout << padLine(L"") << L"\n";
+
+    ss.str(L""); ss.clear();
+    ss << std::setw(10) << L"Surface: " << static_cast<int>(displayData.gp2_surfaceType_lf) << L"           " << std::setw(10) << static_cast<int>(displayData.gp2_surfaceType_rf);
+    std::wcout << padLine(ss.str()) << L"\n";
+    std::wcout << padLine(L"") << L"\n";
+    /*
+    ss.str(L""); ss.clear();
+    ss << std::setw(10) << L"Ride Height: " << static_cast<int>(std::abs(displayData.gp2_rideHeights_lf)) << L"           " << std::setw(10) << static_cast<int>(std::abs(displayData.gp2_rideHeights_rf));
+    std::wcout << padLine(ss.str()) << L"\n";
+    std::wcout << padLine(L"") << L"\n";
+
+    ss.str(L""); ss.clear();
+    ss << std::setw(10) << L"Wheel Spin: " << static_cast<int>(displayData.gp2_wheelSpin_13C_lf) << L"           " << std::setw(10) << static_cast<int>(displayData.gp2_wheelSpin_13C_rf);
+    std::wcout << padLine(ss.str()) << L"\n";
+    std::wcout << padLine(L"") << L"\n";
+
+    ss.str(L""); ss.clear();
+    ss << std::setw(10) << L"Not on Damper: " << static_cast<int>(displayData.gp2_notOnDamper_lf) << L"           " << std::setw(10) << static_cast<int>(displayData.gp2_notOnDamper_rf);
+    std::wcout << padLine(ss.str()) << L"\n";
+    std::wcout << padLine(L"") << L"\n";
+
+    ss.str(L""); ss.clear();
+    ss << std::setw(10) << L"Calc 248: " << static_cast<int>(displayData.gp2_calc_248_lf) << L"           " << std::setw(10) << static_cast<int>(displayData.gp2_calc_248_rf);
+    std::wcout << padLine(ss.str()) << L"\n";
+    std::wcout << padLine(L"") << L"\n";
+
+    ss.str(L""); ss.clear();
+    ss << std::setw(10) << L"Wheel 2AC: " << static_cast<int>(displayData.gp2_wheel_2AC_lf) << L"           " << std::setw(10) << static_cast<int>(displayData.gp2_wheel_2AC_rf);
+    std::wcout << padLine(ss.str()) << L"\n";
+    std::wcout << padLine(L"") << L"\n";
+
+    */
 
     //ss.str(L""); ss.clear();
     //ss << std::setw(10) << L"latN: " << static_cast<int16_t>(displayData.vd_frontLeftForce_N) << L"           " << std::setw(10) << static_cast<int16_t>(displayData.vd_frontRightForce_N);
     //std::wcout << padLine(ss.str()) << L"\n";
     //std::wcout << padLine(L"") << L"\n";
-
+  
     std::wcout << padLine(L"      Left Rear      Right Rear") << L"\n";
     //ss.str(L""); ss.clear();
     //ss << std::setw(10) << displayData.tireload_lr << L"           " << std::setw(10) << displayData.tireload_rr;
     //std::wcout << padLine(ss.str()) << L"\n";
     //std::wcout << padLine(L"") << L"\n";
 
+
+
     ss.str(L""); ss.clear();
-    ss << std::setw(10) << L"long: " << static_cast<int16_t>(displayData.tiremaglong_lr) << L"           " << std::setw(10) << static_cast<int16_t>(displayData.tiremaglong_rr);
+    ss << std::setw(10) << L"Surface: " << static_cast<int>(displayData.gp2_surfaceType_lr) << L"           " << std::setw(10) << static_cast<int>(displayData.gp2_surfaceType_rr);
     std::wcout << padLine(ss.str()) << L"\n";
     std::wcout << padLine(L"") << L"\n";
-    
+  /*
     ss.str(L""); ss.clear();
-    ss << std::setw(10) << L"lat: " << static_cast<int16_t>(displayData.tiremaglat_lr) << L"           " << std::setw(10) << static_cast<int16_t>(displayData.tiremaglat_rr);
+    ss << std::setw(10) << L"Ride Height: " << static_cast<int>(displayData.gp2_rideHeights_lr) << L"           " << std::setw(10) << static_cast<int>(displayData.gp2_rideHeights_rr);
     std::wcout << padLine(ss.str()) << L"\n";
     std::wcout << padLine(L"") << L"\n";
+
+    ss.str(L""); ss.clear();
+    ss << std::setw(10) << L"Wheel Spin: " << static_cast<int>(displayData.gp2_wheelSpin_13C_lr) << L"           " << std::setw(10) << static_cast<int>(displayData.gp2_wheelSpin_13C_rr);
+    std::wcout << padLine(ss.str()) << L"\n";
+    std::wcout << padLine(L"") << L"\n";
+
+    ss.str(L""); ss.clear();
+    ss << std::setw(10) << L"Not on Damper: " << static_cast<int>(displayData.gp2_notOnDamper_lr) << L"           " << std::setw(10) << static_cast<int>(displayData.gp2_notOnDamper_rr);
+    std::wcout << padLine(ss.str()) << L"\n";
+    std::wcout << padLine(L"") << L"\n";
+
+    ss.str(L""); ss.clear();
+    ss << std::setw(10) << L"Calc 248: " << static_cast<int>(displayData.gp2_calc_248_lr) << L"           " << std::setw(10) << static_cast<int>(displayData.gp2_calc_248_rr);
+    std::wcout << padLine(ss.str()) << L"\n";
+    std::wcout << padLine(L"") << L"\n";
+
+    ss.str(L""); ss.clear();
+    ss << std::setw(10) << L"Wheel 2AC: " << static_cast<int>(displayData.gp2_wheel_2AC_lr) << L"           " << std::setw(10) << static_cast<int>(displayData.gp2_wheel_2AC_rr);
+    std::wcout << padLine(ss.str()) << L"\n";
+    std::wcout << padLine(L"") << L"\n";
+*/
 
     // Vehicle Dynamics section
     std::wcout << padLine(L"      == Vehicle Dynamics ==") << L"\n";
@@ -390,8 +525,12 @@ void DisplayTelemetry(const TelemetryDisplayData& displayData, double masterForc
     //ss << L"Longi Force: " << std::setw(8) << displayData.long_force << L"";
     //std::wcout << padLine(ss.str()) << L"\n";
 
+    //ss.str(L""); ss.clear();
+    //ss << L"Direction Value: " << displayData.vd_directionVal;
+    //std::wcout << padLine(ss.str()) << L"\n";
+
     ss.str(L""); ss.clear();
-    ss << L"Direction Value: " << displayData.vd_directionVal;
+    ss << L"Front Force Calc: " << std::setw(10) << g_currentFrontLoad;
     std::wcout << padLine(ss.str()) << L"\n";
 
     ss.str(L""); ss.clear();
@@ -426,27 +565,13 @@ void DisplayTelemetry(const TelemetryDisplayData& displayData, double masterForc
     std::wcout << padLine(L"") << L"\n";
 
     /*
-    // Legacy calculated data section
-    std::wcout << padLine(L"      == Legacy Calculated Data ==") << L"\n";
-    std::wcout << padLine(L"") << L"\n";
-
-    ss.str(L""); ss.clear();
-    ss << L"Direction Value: " << displayData.directionVal;
-    std::wcout << padLine(ss.str()) << L"\n";
-
-    ss.str(L""); ss.clear();
-    ss << L"Slip: " << displayData.slipAngleDeg;
-    std::wcout << padLine(ss.str()) << L"\n";
-
-    ss.str(L""); ss.clear();
-    ss << L"Lateral G: " << displayData.lateralG << L" G";
-    std::wcout << padLine(ss.str()) << L"\n";
-
-    ss.str(L""); ss.clear();
-    ss << L"Force Magnitude: " << displayData.forceMagnitude;
-    std::wcout << padLine(ss.str()) << L"\n";
-
     */
+    
+
+    //ss.str(L""); ss.clear();
+    //ss << L"Force Magnitude: " << displayData.forceMagnitude;
+    //std::wcout << padLine(ss.str()) << L"\n";
+
     std::wcout << padLine(L"----------------------------------------") << L"\n";
     std::wcout << padLine(L"Log:") << L"\n";
 }
@@ -591,6 +716,8 @@ void ProcessLoop() {
     RawTelemetry previousPos{};
     bool firstPos = true;
 
+    static bool versionChecked = false;  // Only check once
+
     while (true) {
         double currentTime = getPerformanceCounterTime();
 
@@ -599,6 +726,22 @@ void ProcessLoop() {
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
             continue;
         }
+
+        if (!versionChecked) {
+            if (current.gp2_structSize != 2560) {
+                LogMessage(L"[ERROR] Wrong version of x86GP2 detected");
+                LogMessage(L"[ERROR] Expected struct size: 2720, Got: " + std::to_wstring(current.gp2_structSize));
+                LogMessage(L"[ERROR] This is the wrong version of x86GP2, please update and try again.");
+
+                std::cin.get();
+
+                exit(1);  // Stop the program
+            }
+            versionChecked = true;  // Mark as checked so we don't repeat this
+            LogMessage(L"[INFO] x86GP2 version check passed - struct size: " + std::to_wstring(current.gp2_structSize));
+        }
+
+
         if (currentTime >= FFBTime) {
 
             if (firstPos) { previousPos = current; firstPos = false; }
@@ -640,7 +783,7 @@ void ProcessLoop() {
 
             // Update Effects
             if (damperEffect && enableDamperEffect)
-                UpdateDamperEffect(current.speed_mph, damperEffect, masterForceScale, damperForceScale);
+                UpdateDamperEffect(current.gp2_speedKmh, damperEffect, masterForceScale, damperForceScale);
 
             if (springEffect && enableSpringEffect)
                 UpdateSpringEffect(springEffect, masterForceScale);
@@ -668,7 +811,7 @@ void ProcessLoop() {
                     //This is what will add the "Constant Force" effect if all the calculations work. 
                     // Probably could smooth all this out
                     ApplyConstantForceEffect(current,
-                        vehicleDynamics, current.speed_mph, current.steering_deg, constantForceEffect, enableWeightForce, enableRateLimit,
+                        vehicleDynamics, current.gp2_speedKmh, constantForceEffect, enableWeightForce, enableRateLimit,
                         masterForceScale, deadzoneForceScale,
                         constantForceScale, brakingForceScale, weightForceScale);
                     previousPos = current;
@@ -677,38 +820,66 @@ void ProcessLoop() {
 
 
                 //Setting variables for next update
-                previousDlong = current.dlong;
-                currentSpeed = current.speed_mph;
+                currentSpeed = current.gp2_speedKmh;
 
 
                 // Update telemetry for display
                 {
                     std::lock_guard<std::mutex> lock(displayMutex);
 
-                    // Basic telemetry
-                    displayData.dlat = current.dlat;
-                    displayData.dlong = current.dlong;
-                    displayData.rotation_deg = current.rotation_deg;
-                    displayData.speed_mph = current.speed_mph;
-                    displayData.steering_deg = current.steering_deg;
-                    displayData.steering_raw = current.steering_raw;
+                    //GP2 Telemetry
+
+                    displayData.gp2_isInRace = current.gp2_structSize;
 
 
-                    // Tire loads
-                    displayData.tireload_lf = current.tireload_lf;
-                    displayData.tireload_rf = current.tireload_rf;
-                    displayData.tireload_lr = current.tireload_lr;
-                    displayData.tireload_rr = current.tireload_rr;
+                    displayData.gp2_isInRace = current.gp2_isInRace;
+                    displayData.gp2_isPlayer = current.gp2_isPlayer;
+                    displayData.gp2_isPaused = current.gp2_isPaused;
+                    displayData.gp2_isReplay = current.gp2_isReplay;
+                    displayData.gp2_isX86MenuOn = current.gp2_isX86MenuOn;
+                    displayData.gp2_deviceID = current.gp2_deviceID;
 
-                    // Tire magnitudes
-                    displayData.tiremaglat_lf = current.tiremaglat_lf;
-                    displayData.tiremaglat_rf = current.tiremaglat_rf;
-                    displayData.tiremaglat_lr = current.tiremaglat_lr;
-                    displayData.tiremaglat_rr = current.tiremaglat_rr;
-                    displayData.tiremaglong_lf = current.tiremaglong_lf;
-                    displayData.tiremaglong_rf = current.tiremaglong_rf;
-                    displayData.tiremaglong_lr = current.tiremaglong_lr;
-                    displayData.tiremaglong_rr = current.tiremaglong_rr;
+                    displayData.gp2_speedKmh = current.gp2_speedKmh;
+                    displayData.gp2_stWheelAngle = current.gp2_stWheelAngle;
+                    displayData.gp2_tyreTurnAngle = current.gp2_tyreTurnAngle;
+                    displayData.gp2_slipAngleFront = current.gp2_slipAngleFront;
+                    displayData.gp2_slipAngleRear = current.gp2_slipAngleRear;
+
+                    displayData.gp2_magLat_lf = current.gp2_magLat_lf;
+                    displayData.gp2_magLat_rf = current.gp2_magLat_rf;
+
+                    displayData.gp2_magLong_lf = current.gp2_magLong_lf;
+                    displayData.gp2_magLong_rf = current.gp2_magLong_rf;
+
+                    displayData.gp2_surfaceType_lf = current.gp2_surfaceType_lf;
+                    displayData.gp2_surfaceType_rf = current.gp2_surfaceType_rf;
+                    displayData.gp2_surfaceType_lr = current.gp2_surfaceType_lr;
+                    displayData.gp2_surfaceType_rr = current.gp2_surfaceType_rr;
+
+                    displayData.gp2_rideHeights_lf = current.gp2_rideHeights_lf;
+                    displayData.gp2_rideHeights_rf = current.gp2_rideHeights_rf;
+                    displayData.gp2_rideHeights_lr = current.gp2_rideHeights_lr;
+                    displayData.gp2_rideHeights_rr = current.gp2_rideHeights_rr;
+
+                    displayData.gp2_wheelSpin_13C_lf = current.gp2_wheelSpin_13C_lf;
+                    displayData.gp2_wheelSpin_13C_rf = current.gp2_wheelSpin_13C_rf;
+                    displayData.gp2_wheelSpin_13C_lr = current.gp2_wheelSpin_13C_lr;
+                    displayData.gp2_wheelSpin_13C_rr = current.gp2_wheelSpin_13C_rr;
+
+                    displayData.gp2_notOnDamper_lf = current.gp2_notOnDamper_lf;
+                    displayData.gp2_notOnDamper_rf = current.gp2_notOnDamper_rf;
+                    displayData.gp2_notOnDamper_lr = current.gp2_notOnDamper_lr;
+                    displayData.gp2_notOnDamper_rr = current.gp2_notOnDamper_rr;
+
+                    displayData.gp2_calc_248_lf = current.gp2_calc_248_lf;
+                    displayData.gp2_calc_248_rf = current.gp2_calc_248_rf;
+                    displayData.gp2_calc_248_lr = current.gp2_calc_248_lr;
+                    displayData.gp2_calc_248_rr = current.gp2_calc_248_rr;
+
+                    displayData.gp2_wheel_2AC_lf = current.gp2_wheel_2AC_lf;
+                    displayData.gp2_wheel_2AC_rf = current.gp2_wheel_2AC_rf;
+                    displayData.gp2_wheel_2AC_lr = current.gp2_wheel_2AC_lr;
+                    displayData.gp2_wheel_2AC_rr = current.gp2_wheel_2AC_rr;
 
 
                     // NEW: Vehicle dynamics data (only update if calculation was successful)
@@ -717,6 +888,8 @@ void ProcessLoop() {
                         displayData.vd_directionVal = vehicleDynamics.directionVal;
                         displayData.vd_frontLeftForce_N = vehicleDynamics.frontLeftForce_N;
                         displayData.vd_frontRightForce_N = vehicleDynamics.frontRightForce_N;
+                        displayData.vd_frontLeftLong_N = vehicleDynamics.frontLeftLong_N;
+                        displayData.vd_frontRightLong_N = vehicleDynamics.frontRightLong_N;
                         //displayData.vd_yaw = vehicleDynamics.yaw;
                         displayData.vd_slip = vehicleDynamics.slip;
                         displayData.vd_forceMagnitude = vehicleDynamics.forceMagnitude;
@@ -747,7 +920,7 @@ int main() {
     
     if (!IsRunningAsAdmin()) {
         std::wcout << L"===============================================" << std::endl;
-        std::wcout << L"    ICR2 FFB Program - Admin Rights Required" << std::endl;
+        std::wcout << L"    GP2 FFB Program - Admin Rights Required" << std::endl;
         std::wcout << L"===============================================" << std::endl;
         std::wcout << L"" << std::endl;
         std::wcout << L"This program requires administrator privileges to:" << std::endl;
@@ -857,7 +1030,7 @@ int main() {
         return 1;
     }
 
-    hr = matchedDevice->Acquire();
+    hr = matchedDevice->Acquire();  
     if (FAILED(hr)) {
         LogMessage(L"[WARNING] Initial acquire failed: 0x" + std::to_wstring(hr) + L" (this is often normal)");
     }

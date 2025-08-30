@@ -2,6 +2,7 @@
 #include <fstream>
 #include <iostream>
 #include "constant_force.h"
+#include "telemetry_reader.h"
 
 /*
  * Copyright 2025 gplaps
@@ -34,6 +35,14 @@ std::wstring targetWeightScale;
 std::wstring targetDamperEnabled;
 std::wstring targetDamperScale;
 std::wstring targetSpringEnabled;
+
+//device id from game
+int g_gameDeviceID = -1;
+
+void UpdateGameDeviceID(int deviceID) {
+    g_gameDeviceID = deviceID + 1;  // index for my code starts at 1
+    LogMessage(L"[INFO] Game device ID updated to: " + std::to_wstring(g_gameDeviceID));
+}
 
 
 
@@ -134,7 +143,8 @@ BOOL CALLBACK EnumDevicesCallback(const DIDEVICEINSTANCE* pdidInstance, VOID* pC
 bool LoadFFBSettings(const std::wstring& filename) {
     
     targetWeightEnabled = L"false";
-    targetWeightScale = L"1.0";
+    targetWeightScale = L"1.0";            
+    targetGameVersion = L"x86GP2";
     
     std::wifstream file(filename);
     if (!file) return false;
@@ -142,9 +152,8 @@ bool LoadFFBSettings(const std::wstring& filename) {
     while (std::getline(file, line)) {
         if (line.rfind(L"Device: ", 0) == 0)
             targetDeviceName = line.substr(8);
-        else if (line.rfind(L"Game: ", 0) == 0)
-            targetGameVersion = line.substr(6);
-        else if (line.rfind(L"Force: ", 0) == 0)
+
+        if (line.rfind(L"Force: ", 0) == 0)
             targetForceSetting = line.substr(7);
         else if (line.rfind(L"Deadzone: ", 0) == 0)
             targetDeadzoneSetting = line.substr(10);

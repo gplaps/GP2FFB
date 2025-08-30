@@ -37,3 +37,5 @@ void ShowAvailableDevicesOnConsole();
 // === FFB Setup Functions ===
 bool LoadFFBSettings(const std::wstring& filename);
 bool InitializeDevice();
+
+void UpdateGameDeviceID(int deviceID);

@@ -2,6 +2,7 @@
 //#include "calculations/slip_angle.h"
 //#include "calculations/lateral_load.h"
 #include "calculations/vehicle_dynamics.h"
+#include "telemetry_reader.h"
 #include <dinput.h>
 #include <string>
 
@@ -13,8 +14,7 @@ extern IDirectInputEffect* constantForceEffect;
 void ApplyConstantForceEffect(
     const RawTelemetry& current,
     const CalculatedVehicleDynamics& vehicleDynamics,
-    double speed_mph,
-    double steering_deg,
+    double gp2_speedKmh,
     IDirectInputEffect* constantForceEffect,
     bool enableWeightForce,
     bool enableRateLimit,

@@ -7,14 +7,14 @@
 // Create damper to make it feel like the steering is not powered, mostly for pitlane, maybe hairpin use
 // Only goes to '40mph'
 
-void UpdateDamperEffect(double speedMph, IDirectInputEffect* effect, double masterForceScale, double damperForceScale) {
+void UpdateDamperEffect(double gp2_speedKmh, IDirectInputEffect* effect, double masterForceScale, double damperForceScale) {
     if (!effect) return;
 
-    double maxSpeed = 40.0;
+    double maxSpeed = 65.0;
     double minDamper = 0.0;
     double maxDamper = 5000.0;
 
-    double t = std::clamp(speedMph / maxSpeed, 0.0, 1.0);
+    double t = std::clamp(gp2_speedKmh / maxSpeed, 0.0, 1.0);
     LONG damperStrength = static_cast<LONG>(((1.0 - t) * maxDamper * masterForceScale) * damperForceScale);
 
     DICONDITION condition = {};
