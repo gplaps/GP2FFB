@@ -335,7 +335,7 @@ void DisplayTelemetry(const TelemetryDisplayData& displayData, double masterForc
         };
 
     // Header section
-    std::wcout << padLine(L"GP2 FFB Program Version 0.2.2 BETA") << L"\n";
+    std::wcout << padLine(L"GP2 FFB Program Version 0.3.0 BETA") << L"\n";
     std::wcout << padLine(L"") << L"\n";
     std::wcout << padLine(L"Connected Device: " + targetDeviceName) << L"\n";
     std::wcout << padLine(L"Game: " + targetGameVersion) << L"\n";
@@ -727,18 +727,30 @@ void ProcessLoop() {
             continue;
         }
 
+        static int versionCheckAttempts = 0;
+
         if (!versionChecked) {
-            if (current.gp2_structSize != 2720) {
+            if (current.gp2_structSize == 0) {
+                // Game hasn't fully initialized yet, keep waiting
+                versionCheckAttempts++;
+                if (versionCheckAttempts % 100 == 0) { // Log every ~1.5 seconds at 60fps
+                    LogMessage(L"[INFO] Waiting for x86GP2 to initialize... (attempt " + std::to_wstring(versionCheckAttempts) + L")");
+                }
+                continue; // Skip to next loop iteration
+            }
+            else if (current.gp2_structSize != 2720) {
                 LogMessage(L"[ERROR] Wrong version of x86GP2 detected");
                 LogMessage(L"[ERROR] Expected struct size: 2720, Got: " + std::to_wstring(current.gp2_structSize));
                 LogMessage(L"[ERROR] This is the wrong version of x86GP2, please update and try again.");
-
                 std::cin.get();
-
-                exit(1);  // Stop the program
+                exit(1);
             }
-            versionChecked = true;  // Mark as checked so we don't repeat this
-            LogMessage(L"[INFO] x86GP2 version check passed - struct size: " + std::to_wstring(current.gp2_structSize));
+            else {
+                // Valid version detected
+                versionChecked = true;
+                LogMessage(L"[INFO] x86GP2 version check passed - struct size: " + std::to_wstring(current.gp2_structSize));
+                LogMessage(L"[INFO] Version check completed after " + std::to_wstring(versionCheckAttempts) + L" attempts");
+            }
         }
 
 

@@ -122,6 +122,7 @@ void ApplyConstantForceEffect(const RawTelemetry& current,
     }
 
     // Low speed filtering
+    /*
     if (gp2_speedKmh < 5.0) {
         static bool wasLowSpeed = false;
         if (!wasLowSpeed) {
@@ -143,9 +144,10 @@ void ApplyConstantForceEffect(const RawTelemetry& current,
             constantForceEffect->SetParameters(&eff, DIEP_TYPESPECIFICPARAMS | DIEP_DIRECTION);
             wasLowSpeed = true;
         }
+     
         return;
     }
-
+       */
     static bool wasLowSpeed = false;
     if (wasLowSpeed) {
         wasLowSpeed = false;  // Reset when speed picks up
@@ -247,7 +249,7 @@ void ApplyConstantForceEffect(const RawTelemetry& current,
     // === Input Smoothing ===
     static double smoothedFrontTireLoadSum = 0.0;
     static bool inputInitialized = false;
-    const double INPUT_SMOOTHING = 0.4;  // Adjust 0.1-0.4 based on preference
+    const double INPUT_SMOOTHING = 0.25;  // Adjust 0.1-0.4 based on preference
 
     if (!inputInitialized) {
         smoothedFrontTireLoadSum = frontTireLoadSum;
@@ -259,7 +261,10 @@ void ApplyConstantForceEffect(const RawTelemetry& current,
     }
 
     // Use smoothed input for all calculations
-    double frontTireLoadMagnitude = std::abs(smoothedFrontTireLoadSum);
+   // double frontTireLoadMagnitude = std::abs(smoothedFrontTireLoadSum);
+
+     double frontTireLoadMagnitude = std::abs(frontTireLoadSum);
+
 
    // double frontTireLoadSum = (vehicleDynamics.frontLeftForce_N + (vehicleDynamics.frontLeftLong_N * longScaler)) + (vehicleDynamics.frontRightForce_N + (vehicleDynamics.frontRightLong_N * longScaler));
 
@@ -383,7 +388,7 @@ void ApplyConstantForceEffect(const RawTelemetry& current,
 
     static std::deque<int> magnitudeHistory;
     magnitudeHistory.push_back(signedMagnitude);
-    if (magnitudeHistory.size() > 2) {
+    if (magnitudeHistory.size() > 4) {
         magnitudeHistory.pop_front();
     }
     signedMagnitude = static_cast<int>(std::accumulate(magnitudeHistory.begin(), magnitudeHistory.end(), 0.0) / magnitudeHistory.size());
