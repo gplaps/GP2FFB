@@ -42,6 +42,8 @@
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
  */
 
+
+
 typedef struct {
     int structSize;
 
@@ -78,6 +80,10 @@ typedef struct {
     unsigned char wheelsData[2048];
 } SharedMemory;
 
+static HANDLE hmap = NULL;
+static const SharedMemory* p = nullptr;
+static bool initialized = false;
+
 int readWheelData(const unsigned char* wheelsData, int dataStartOffset, int offsetIntoData) {
     return *reinterpret_cast<const int*>(&wheelsData[dataStartOffset + offsetIntoData]);
 }
@@ -86,11 +92,20 @@ int readWheelData(const unsigned char* wheelsData, int dataStartOffset, int offs
 
 bool ReadTelemetryData(RawTelemetry& out) {
 
-    HANDLE hmap = OpenFileMappingA(FILE_MAP_READ, FALSE, "Local\\x86GP2FFB");
-    if (!hmap) { LogMessage(L"x86GP2 is not found"); return 1; }
+    if (!initialized) {
+        hmap = OpenFileMappingA(FILE_MAP_READ, FALSE, "Local\\x86GP2FFB");
+        if (!hmap) {
+            LogMessage(L"x86GP2 is not found");
+            return false;
+        }
 
-    const SharedMemory* p = (const SharedMemory*)MapViewOfFile(hmap, FILE_MAP_READ, 0, 0, 0);
-    if (!p) return 2;
+        p = (const SharedMemory*)MapViewOfFile(hmap, FILE_MAP_READ, 0, 0, 0);
+        if (!p) {
+            CloseHandle(hmap);
+            return false;
+        }
+        initialized = true;
+    }
 
     CONSOLE_CURSOR_INFO ci = { 1, FALSE };
     SetConsoleCursorInfo(GetStdHandle(STD_OUTPUT_HANDLE), &ci);

@@ -1,4 +1,4 @@
-# FFB for x86GP2 – BETA 0.2.1
+# FFB for x86GP2 – BETA 0.2.2
 **USE AT YOUR OWN RISK**
 
 This is a custom Force Feedback application for the classic racing simulator **Grand Prix II** by Microprose, and specifically the x86 version update from hatcher:
@@ -47,6 +47,9 @@ To avoid sudden force application, **pause the game first** before restarting th
 ## Version History
 
 ### Betas
+**0.2.2 (2025-08-31)** 
+- Fixed memory reading issues which *may* have caused the program to occasionally crash
+
 **0.2.1 (2025-08-31)** 
 - Updated version check code
 - re-scaled Damper effect to run to a higher speed
