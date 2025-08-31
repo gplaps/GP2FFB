@@ -10,7 +10,7 @@
 void UpdateDamperEffect(double gp2_speedKmh, IDirectInputEffect* effect, double masterForceScale, double damperForceScale) {
     if (!effect) return;
 
-    double maxSpeed = 65.0;
+    double maxSpeed = 120.0;
     double minDamper = 0.0;
     double maxDamper = 5000.0;
 
