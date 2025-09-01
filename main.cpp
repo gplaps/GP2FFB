@@ -335,7 +335,7 @@ void DisplayTelemetry(const TelemetryDisplayData& displayData, double masterForc
         };
 
     // Header section
-    std::wcout << padLine(L"GP2 FFB Program Version 0.3.0 BETA") << L"\n";
+    std::wcout << padLine(L"GP2 FFB Program Version 0.3.1 BETA") << L"\n";
     std::wcout << padLine(L"") << L"\n";
     std::wcout << padLine(L"Connected Device: " + targetDeviceName) << L"\n";
     std::wcout << padLine(L"Game: " + targetGameVersion) << L"\n";
@@ -470,7 +470,7 @@ void DisplayTelemetry(const TelemetryDisplayData& displayData, double masterForc
     //std::wcout << padLine(ss.str()) << L"\n";
     //std::wcout << padLine(L"") << L"\n";
   
-    std::wcout << padLine(L"      Left Rear      Right Rear") << L"\n";
+   // std::wcout << padLine(L"      Left Rear      Right Rear") << L"\n";
     //ss.str(L""); ss.clear();
     //ss << std::setw(10) << displayData.tireload_lr << L"           " << std::setw(10) << displayData.tireload_rr;
     //std::wcout << padLine(ss.str()) << L"\n";
@@ -478,10 +478,10 @@ void DisplayTelemetry(const TelemetryDisplayData& displayData, double masterForc
 
 
 
-    ss.str(L""); ss.clear();
-    ss << std::setw(10) << L"Surface: " << static_cast<int>(displayData.gp2_surfaceType_lr) << L"           " << std::setw(10) << static_cast<int>(displayData.gp2_surfaceType_rr);
-    std::wcout << padLine(ss.str()) << L"\n";
-    std::wcout << padLine(L"") << L"\n";
+    //ss.str(L""); ss.clear();
+    //ss << std::setw(10) << L"Surface: " << static_cast<int>(displayData.gp2_surfaceType_lr) << L"           " << std::setw(10) << static_cast<int>(displayData.gp2_surfaceType_rr);
+    //std::wcout << padLine(ss.str()) << L"\n";
+    //std::wcout << padLine(L"") << L"\n";
   /*
     ss.str(L""); ss.clear();
     ss << std::setw(10) << L"Ride Height: " << static_cast<int>(displayData.gp2_rideHeights_lr) << L"           " << std::setw(10) << static_cast<int>(displayData.gp2_rideHeights_rr);

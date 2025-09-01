@@ -320,9 +320,9 @@ void ApplyConstantForceEffect(const RawTelemetry& current,
 
     // Curve Parameters
     // Added step for greater center feel
-    const double STEEP_THRESHOLD = 1000.0;     // Switch point: 1500N
+    const double STEEP_THRESHOLD = 800.0;     // Switch point: 1500N
     const double STEEP_FORCE_TARGET = 2500.0;  // Force at switch point: 2000
-    const double GENTLE_LOAD_TARGET = 16000.0; // High load point: 14000N  
+    const double GENTLE_LOAD_TARGET = 20000.0; // High load point: 14000N  
     const double GENTLE_FORCE_TARGET = 9500.0; // Force at high load: 8500
 
     if (frontTireLoadMagnitude <= STEEP_THRESHOLD) {
