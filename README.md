@@ -48,8 +48,8 @@ To avoid sudden force application, **pause the game first** before restarting th
 
 ### Betas
 **0.3.1 (2025-09-01)** 
-- Recaled effects to prevent constant peaking at high load
-- Removed some unncessary telemetry from the display
+- Rescaled effects to prevent constant peaking at high load
+- Removed some unnecessary telemetry from the display
 
 **0.3.0 (2025-08-31)** 
 - Reworked force calculation to remove unncessary smoothing which made the center feel 'sloppy'
