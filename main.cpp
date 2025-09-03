@@ -42,6 +42,7 @@
 #include "telemetry_reader.h"
 #include "calculations/vehicle_dynamics.h"
 #include "forces/constant_force.h"
+#include "forces/periodic_force.h"
 #include "forces/damper_effect.h"
 #include "forces/spring_effect.h"
 
@@ -72,6 +73,7 @@ const size_t maxLogLines = 1000;  // Show last 1000 log lines
 bool enableRateLimit = false;
 bool enableConstantForce = false;
 bool enableWeightForce = false;
+bool enableVibrationForce = false;
 bool enableDamperEffect = false;
 bool enableSpringEffect = false;
 
@@ -81,6 +83,7 @@ bool springStarted = false;
 
 // I think this is how we tell it these things are DirectInput stuff?
 IDirectInputEffect* constantForceEffect = nullptr;
+IDirectInputEffect* periodicVibrationEffect = nullptr;
 IDirectInputEffect* damperEffect = nullptr;
 IDirectInputEffect* springEffect = nullptr;
 
@@ -335,7 +338,7 @@ void DisplayTelemetry(const TelemetryDisplayData& displayData, double masterForc
         };
 
     // Header section
-    std::wcout << padLine(L"GP2 FFB Program Version 0.3.2 BETA") << L"\n";
+    std::wcout << padLine(L"GP2 FFB Program Version 0.4.0 BETA") << L"\n";
     std::wcout << padLine(L"") << L"\n";
     std::wcout << padLine(L"Connected Device: " + targetDeviceName) << L"\n";
     std::wcout << padLine(L"Game: " + targetGameVersion) << L"\n";
@@ -784,6 +787,9 @@ void ProcessLoop() {
             double constantForceValue = std::stod(targetConstantScale);
             double constantForceScale = std::clamp(constantForceValue / 100.0, 0.0, 1.0);
 
+            double vibrationForceValue = std::stod(targetVibrationScale);
+            double vibrationForceScale = std::clamp(vibrationForceValue / 100.0, 0.0, 1.0);
+
             double brakingForceValue = std::stod(targetBrakingScale);
             double brakingForceScale = brakingForceValue;
 
@@ -823,11 +829,15 @@ void ProcessLoop() {
                     //This is what will add the "Constant Force" effect if all the calculations work. 
                     // Probably could smooth all this out
                     ApplyConstantForceEffect(current,
-                        vehicleDynamics, current.gp2_speedKmh, constantForceEffect, enableWeightForce, enableRateLimit,
+                        vehicleDynamics, current.gp2_speedKmh, constantForceEffect, enableVibrationForce, enableWeightForce, enableRateLimit,
                         masterForceScale, deadzoneForceScale,
-                        constantForceScale, brakingForceScale, weightForceScale);
-                    previousPos = current;
+                        constantForceScale, vibrationForceScale, brakingForceScale, weightForceScale);
 
+                }
+
+                //create kerb effects
+                if (enableVibrationForce && periodicVibrationEffect) {
+                    ApplyPeriodicVibrationEffect(current, periodicVibrationEffect, enableVibrationForce, masterForceScale, vibrationForceScale);
                 }
 
 
@@ -1055,6 +1065,7 @@ int main() {
     enableRateLimit = (targetWeightEnabled == L"true" || targetWeightEnabled == L"True");
     enableConstantForce = (targetConstantEnabled == L"true" || targetConstantEnabled == L"True");
     enableWeightForce = (targetWeightEnabled == L"true" || targetWeightEnabled == L"True");
+    enableVibrationForce = (targetVibrationEnabled == L"true" || targetVibrationEnabled == L"True");
     enableDamperEffect = (targetDamperEnabled == L"true" || targetDamperEnabled == L"True");
     enableSpringEffect = (targetSpringEnabled == L"true" || targetSpringEnabled == L"True");
 
@@ -1062,12 +1073,16 @@ int main() {
     if (enableConstantForce) CreateConstantForceEffect(matchedDevice);
     if (enableDamperEffect)  CreateDamperEffect(matchedDevice);
     if (enableSpringEffect)  CreateSpringEffect(matchedDevice);
+    if (enableVibrationForce) {
+        CreatePeriodicVibrationEffect(matchedDevice, &periodicVibrationEffect);
+    }
 
     // This is to control the max % for any of the FFB effects as specified in the ffb.ini
     // Prevents broken wrists (hopefully)
     double masterForceValue = std::stod(targetForceSetting);
     double constantForceValue = std::stod(targetConstantScale);
     double weightForceValue = std::stod(targetWeightScale);
+    double vibrationForceValue = std::stod(targetVibrationScale);
     double damperForceValue = std::stod(targetDamperScale);
 
     // Start telemetry processing!

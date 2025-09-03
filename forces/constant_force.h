@@ -11,16 +11,17 @@ void LogMessage(const std::wstring& msg);
 
 extern IDirectInputEffect* constantForceEffect;
 
-void ApplyConstantForceEffect(
-    const RawTelemetry& current,
+void ApplyConstantForceEffect(const RawTelemetry& current,
     const CalculatedVehicleDynamics& vehicleDynamics,
     double gp2_speedKmh,
     IDirectInputEffect* constantForceEffect,
+    bool enableVibrationForce,
     bool enableWeightForce,
     bool enableRateLimit,
     double masterForceScale,
     double deadzoneForceScale,
     double constantForceScale,
+    double vibrationForceScale,
     double brakingForceScale,
     double weightForceScale
-    );
+);

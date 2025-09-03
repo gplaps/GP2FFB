@@ -26,17 +26,21 @@ extern std::wstring targetInvertFFB;
 extern int g_currentFFBForce;
 extern int g_currentFrontLoad;
 
+
 void ApplyConstantForceEffect(const RawTelemetry& current,
     const CalculatedVehicleDynamics& vehicleDynamics,
-    double gp2_speedKmh, IDirectInputEffect* constantForceEffect,
+    double gp2_speedKmh,
+    IDirectInputEffect* constantForceEffect,
+    bool enableVibrationForce,
     bool enableWeightForce,
     bool enableRateLimit,
     double masterForceScale,
     double deadzoneForceScale,
     double constantForceScale,
+    double vibrationForceScale,
     double brakingForceScale,
     double weightForceScale
-    ) {
+) {
 
     if (!constantForceEffect) return;
 
@@ -120,6 +124,7 @@ void ApplyConstantForceEffect(const RawTelemetry& current,
         }
         return;
     }
+
 
     // Low speed filtering
     /*
@@ -506,6 +511,7 @@ void ApplyConstantForceEffect(const RawTelemetry& current,
         lastProcessedMagnitude = magnitude;
 
         */
+
 
         // === Rate Limiting ===
     // === Reimplemnted older style to try to make compatible with Thrustmaster wheels ===

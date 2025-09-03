@@ -1,4 +1,4 @@
-# FFB for x86GP2 – BETA 0.3.2
+# FFB for x86GP2 – BETA 0.4.0
 **USE AT YOUR OWN RISK**
 
 This is a custom Force Feedback application for the classic racing simulator **Grand Prix II** by Microprose, and specifically the x86 version update from hatcher:
@@ -47,6 +47,9 @@ To avoid sudden force application, **pause the game first** before restarting th
 ## Version History
 
 ### Betas
+**0.4.0 (2025-09-03)** 
+- Added Kerb vibration effects. Enable them with the "Vibration" setting in the FFB.ini. Now the wheel will give a vibration when running over a kerb to increase the 'feel'. They are off by default as not to break the ffb for any specific kinds of wheels. They can also be made stronger or weaker overall with the scale parameter in the ffb.ini as well.
+
 **0.3.2 (2025-09-02)** 
 - Removed requirement for VC Redistributable which should fix crashes on startup for some users
 

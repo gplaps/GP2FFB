@@ -18,6 +18,8 @@ extern std::wstring targetLimitEnabled;
 extern std::wstring targetConstantEnabled;
 extern std::wstring targetConstantScale;
 extern std::wstring targetBrakingScale;
+extern std::wstring targetVibrationEnabled;
+extern std::wstring targetVibrationScale;
 extern std::wstring targetWeightEnabled;
 extern std::wstring targetWeightScale;
 extern std::wstring targetDamperEnabled;
