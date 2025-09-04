@@ -231,13 +231,13 @@ void ApplyConstantForceEffect(const RawTelemetry& current,
     // Reduce force for the wheel with less grip when off asphalt
     if (current.gp2_surfaceType_rf != 0) {
         if (rightForce >= 0) {
-            rightForce = leftForce * 0.25;  // Reduce the force on the wheel with less grip        
+            rightForce = leftForce * 0.15;  // Reduce the force on the wheel with less grip        
         }
     }
 
     if (current.gp2_surfaceType_lf != 0) {
         if (leftForce <= 0) {
-            leftForce = rightForce * 0.25;  // Reduce the force on the wheel with less grip
+            leftForce = rightForce * 0.15;  // Reduce the force on the wheel with less grip
 
         }
     }
@@ -254,7 +254,7 @@ void ApplyConstantForceEffect(const RawTelemetry& current,
     // === Input Smoothing ===
     static double smoothedFrontTireLoadSum = 0.0;
     static bool inputInitialized = false;
-    const double INPUT_SMOOTHING = 0.25;  // Adjust 0.1-0.4 based on preference
+    const double INPUT_SMOOTHING = 0.4;  // Adjust 0.1-0.4 based on preference
 
     if (!inputInitialized) {
         smoothedFrontTireLoadSum = frontTireLoadSum;
@@ -268,7 +268,7 @@ void ApplyConstantForceEffect(const RawTelemetry& current,
     // Use smoothed input for all calculations
    // double frontTireLoadMagnitude = std::abs(smoothedFrontTireLoadSum);
 
-     double frontTireLoadMagnitude = std::abs(frontTireLoadSum);
+     double frontTireLoadMagnitude = std::abs(smoothedFrontTireLoadSum);
 
 
    // double frontTireLoadSum = (vehicleDynamics.frontLeftForce_N + (vehicleDynamics.frontLeftLong_N * longScaler)) + (vehicleDynamics.frontRightForce_N + (vehicleDynamics.frontRightLong_N * longScaler));
@@ -283,11 +283,11 @@ void ApplyConstantForceEffect(const RawTelemetry& current,
     g_currentFrontLoad = frontTireLoad;
 
 
-    /*
+/*
         // Physics constants from your engineer friend
-        const double CURVE_STEEPNESS = 1.0e-4;
-        const double MAX_THEORETICAL = 8500;
-        const double SCALE_FACTOR = 1.20;
+        const double CURVE_STEEPNESS = 4.0017421865e-4;
+        const double MAX_THEORETICAL = 5464.666;
+        const double SCALE_FACTOR = 1.2020;
 
         // Calculate magnitude using physics formula
         double physicsForceMagnitude = atan(frontTireLoadMagnitude * CURVE_STEEPNESS) * MAX_THEORETICAL * SCALE_FACTOR;
@@ -319,15 +319,16 @@ void ApplyConstantForceEffect(const RawTelemetry& current,
                 force = (physicsForce >= 0) ? scaledMagnitude : -scaledMagnitude;
             }
           }
-       */
+*/
+
 
     double physicsForceMagnitude;
 
     // Curve Parameters
     // Added step for greater center feel
-    const double STEEP_THRESHOLD = 800.0;     // Switch point: 1500N
+    const double STEEP_THRESHOLD = 1500.0;     // Switch point: 1500N
     const double STEEP_FORCE_TARGET = 2500.0;  // Force at switch point: 2000
-    const double GENTLE_LOAD_TARGET = 20000.0; // High load point: 14000N  
+    const double GENTLE_LOAD_TARGET = 20000.0; // High load point: 14000N
     const double GENTLE_FORCE_TARGET = 9500.0; // Force at high load: 8500
 
     if (frontTireLoadMagnitude <= STEEP_THRESHOLD) {
@@ -358,7 +359,55 @@ void ApplyConstantForceEffect(const RawTelemetry& current,
 
     double force = physicsForce;
 
+    // Apply proportional deadzone
+    if (deadzoneForceScale > 0.0) {
+        // Convert deadzoneForceScale (0-100) to percentage (0.0-1.0)
+        double deadzonePercentage = deadzoneForceScale / 100.0;
 
+        // Calculate deadzone threshold using magnitude
+        double maxPossibleForce = 10000; // ~10200
+        double deadzoneThreshold = maxPossibleForce * deadzonePercentage;
+
+        // Apply deadzone: remove bottom X% and rescale remaining range
+        if (std::abs(physicsForce) <= deadzoneThreshold) {
+            force = 0.0;  // Force is in deadzone - zero output
+        }
+        else {
+            // Rescale remaining force range to maintain full output range
+            double remainingRange = maxPossibleForce - deadzoneThreshold;
+            double adjustedInput = std::abs(physicsForce) - deadzoneThreshold;
+            double scaledMagnitude = (adjustedInput / remainingRange) * maxPossibleForce;
+
+            // Restore original sign
+            force = (physicsForce >= 0) ? scaledMagnitude : -scaledMagnitude;
+        }
+    }
+
+
+/*
+    // ==== CENTERING FORCE =====
+    //Fake centering force to add feeling to the center of the wheel since the data doesnt give it
+    double centeringForce = 0.0;
+    if (gp2_speedKmh > 5.0) {
+        double baseStrengthPerDegree = 2000.0 / 3.0;  // ~667 per deg
+        double speedFactor = std::clamp(gp2_speedKmh / 200.0, 0.3, 1.0);
+
+        centeringForce = -current.gp2_stWheelAngle * baseStrengthPerDegree * speedFactor;
+    }
+
+    // Blend: full centering at 0°, taper to 0 by ±3°, pure physics beyond
+    double angleNorm = std::abs(current.gp2_stWheelAngle) / 5.0;
+    angleNorm = std::clamp(angleNorm, 0.0, 1.0);
+
+    // Quadratic easing so it fades smoothly
+    double blend = 1.0 - (angleNorm * angleNorm);
+
+    // Apply blend (centering only contributes when blend > 0)
+    force = blend * centeringForce + force;
+*/
+
+       
+ 
 
     // Cap maximum force magnitude while preserving sign
     if (std::abs(force) > 10000.0) {
@@ -393,7 +442,7 @@ void ApplyConstantForceEffect(const RawTelemetry& current,
 
     static std::deque<int> magnitudeHistory;
     magnitudeHistory.push_back(signedMagnitude);
-    if (magnitudeHistory.size() > 4) {
+    if (magnitudeHistory.size() > 2) {
         magnitudeHistory.pop_front();
     }
     signedMagnitude = static_cast<int>(std::accumulate(magnitudeHistory.begin(), magnitudeHistory.end(), 0.0) / magnitudeHistory.size());
@@ -587,7 +636,7 @@ void ApplyConstantForceEffect(const RawTelemetry& current,
 
     //Logging
     static int debugCounter = 0;
-    if (debugCounter % 30 == 0) {  // Every 30 frames
+    if (debugCounter % 1 == 0) {  // Every 30 frames
         LogMessage(L"[DEBUG] FL: " + std::to_wstring(vehicleDynamics.frontLeftForce_N) +
             L", FR: " + std::to_wstring(vehicleDynamics.frontRightForce_N) +
             L", Total: " + std::to_wstring(frontTireLoad) +
