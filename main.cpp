@@ -338,7 +338,7 @@ void DisplayTelemetry(const TelemetryDisplayData& displayData, double masterForc
         };
 
     // Header section
-    std::wcout << padLine(L"GP2 FFB Program Version 0.4.1 BETA") << L"\n";
+    std::wcout << padLine(L"GP2 FFB Program Version 0.4.2 BETA") << L"\n";
     std::wcout << padLine(L"") << L"\n";
     std::wcout << padLine(L"Connected Device: " + targetDeviceName) << L"\n";
     std::wcout << padLine(L"Game: " + targetGameVersion) << L"\n";

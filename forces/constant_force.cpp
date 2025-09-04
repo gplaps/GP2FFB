@@ -636,7 +636,7 @@ void ApplyConstantForceEffect(const RawTelemetry& current,
 
     //Logging
     static int debugCounter = 0;
-    if (debugCounter % 1 == 0) {  // Every 30 frames
+    if (debugCounter % 30 == 0) {  // Every 30 frames
         LogMessage(L"[DEBUG] FL: " + std::to_wstring(vehicleDynamics.frontLeftForce_N) +
             L", FR: " + std::to_wstring(vehicleDynamics.frontRightForce_N) +
             L", Total: " + std::to_wstring(frontTireLoad) +
