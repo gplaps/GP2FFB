@@ -242,6 +242,44 @@ void ApplyConstantForceEffect(const RawTelemetry& current,
         }
     }
 
+    // '0' logic to prevent sudden spikes in FFB due to weird physics behavior
+
+    static double lastLeftForce = 0.0;
+    static double lastRightForce = 0.0;
+
+    bool isRightTurn = current.gp2_stWheelAngle > 0.1;  // Small deadzone for straight driving
+    bool isLeftTurn = current.gp2_stWheelAngle < -0.1;
+
+    double smoothedLeftForce = leftForce;
+    double smoothedRightForce = rightForce;
+
+    if (isRightTurn) {
+        // Right turn - left tire is inside, right tire is outside
+        // Check if inside (left) tire suddenly dropped to near zero
+        if (std::abs(lastLeftForce) > 500.0 && std::abs(leftForce) < 50.0) {
+            // Only smooth if outside tire still has significant force
+            if (std::abs(rightForce) > 200.0) {
+                smoothedLeftForce = lastLeftForce * 0.8;  // Gradual decay instead of sudden drop
+                LogMessage(L"[DEBUG] Right turn: Smoothing sudden left tire drop from " +
+                    std::to_wstring(lastLeftForce) + L" to " + std::to_wstring(smoothedLeftForce));
+            }
+        }
+    }
+    else if (isLeftTurn) {
+        // Left turn - right tire is inside, left tire is outside
+        // Check if inside (right) tire suddenly dropped to near zero
+        if (std::abs(lastRightForce) > 500.0 && std::abs(rightForce) < 50.0) {
+            // Only smooth if outside tire still has significant force
+            if (std::abs(leftForce) > 200.0) {
+                smoothedRightForce = lastRightForce * 0.8;  // Gradual decay instead of sudden drop
+                LogMessage(L"[DEBUG] Left turn: Smoothing sudden right tire drop from " +
+                    std::to_wstring(lastRightForce) + L" to " + std::to_wstring(smoothedRightForce));
+            }
+        }
+    }
+
+
+
      double frontTireLoadSum = (std::abs(leftForce) - std::abs(rightForce)) + frontTireLongSum;
 
    // double frontTireLoadSum = leftForce + rightForce + frontTireLongSum;
@@ -344,7 +382,7 @@ void ApplyConstantForceEffect(const RawTelemetry& current,
 
     double physicsForceMagnitude;
     
-    const double STEEP_THRESHOLD = 1500.0;     // Switch point: 1500N
+    const double STEEP_THRESHOLD = 1000.0;     // Switch point: 1500N
     const double STEEP_FORCE_TARGET = 2500.0;  // Force at switch point: 2000
     const double GENTLE_LOAD_TARGET = 20000.0; // High load point: 14000N
     const double GENTLE_FORCE_TARGET = 9500.0; // Force at high load: 8500
@@ -696,7 +734,7 @@ void ApplyConstantForceEffect(const RawTelemetry& current,
 
     //Logging
     static int debugCounter = 0;
-    if (debugCounter % 1 == 0) {  // Every 30 frames
+    if (debugCounter % 30 == 0) {  // Every 30 frames
         LogMessage(L"[DEBUG] FL: " + std::to_wstring(vehicleDynamics.frontLeftForce_N) +
             L", FR: " + std::to_wstring(vehicleDynamics.frontRightForce_N) +
             L", Total: " + std::to_wstring(frontTireLoad) +
