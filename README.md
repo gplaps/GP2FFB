@@ -1,4 +1,4 @@
-# FFB for x86GP2 – BETA 0.4.2
+# FFB for x86GP2 – BETA 0.4.3
 **USE AT YOUR OWN RISK**
 
 This is a custom Force Feedback application for the classic racing simulator **Grand Prix II** by Microprose, and specifically the x86 version update from hatcher:
@@ -24,13 +24,14 @@ I’ve been using it without issues on my own hardware, but your mileage may var
 
 ## Installation
 
-1. **Download** the app. Get the latest version from Releases
-2. **Open `ffb.ini`** and edit the following:
+1. **Download** the app. Get the latest version from Releases: https://github.com/gplaps/GP2FFB/releases
+2. **Install VC++ Redistributable** from Microsoft if not already installed: https://aka.ms/vs/17/release/vc_redist.x86.exe
+3. **Open `ffb.ini`** and edit the following:
     - `Device` — Must match your device name **exactly** as seen in Windows "Game Controllers".
     - `Force` — Controls force scale (default is 25%).  
       **Be careful** — although the code limits input, always test with low force first.
 
-3. Launch the game and then **Run the app**.  
+4. Launch the game and then **Run the app**.  
    After a moment, the window should begin showing telemetry.
 
 > You may need to run the app in **Admin mode** so it can access GP2’s memory.
@@ -47,6 +48,9 @@ To avoid sudden force application, **pause the game first** before restarting th
 ## Version History
 
 ### Betas
+**0.4.3 (2025-09-03)** 
+- Removed VC++ Redistributable from exe to stop false virus alerts. If you do not have the Microsoft VC++ Redistributable installed you will need to install it before using the FFB App: https://aka.ms/vs/17/release/vc_redist.x86.exe
+
 **0.4.2 (2025-09-03)** 
 - Fixed debug log outputting too much data, will add option to disable debug later
 

@@ -338,7 +338,7 @@ void DisplayTelemetry(const TelemetryDisplayData& displayData, double masterForc
         };
 
     // Header section
-    std::wcout << padLine(L"GP2 FFB Program Version 0.4.2 BETA") << L"\n";
+    std::wcout << padLine(L"GP2 FFB Program Version 0.4.3 BETA") << L"\n";
     std::wcout << padLine(L"") << L"\n";
     std::wcout << padLine(L"Connected Device: " + targetDeviceName) << L"\n";
     std::wcout << padLine(L"Game: " + targetGameVersion) << L"\n";
@@ -939,6 +939,14 @@ void ProcessLoop() {
 
 // Where it all happens
 int main() {
+
+    //Check for libraries
+    HMODULE vcruntime = LoadLibrary(L"vcruntime140.dll");
+    if (!vcruntime) {
+        MessageBox(NULL, L"Missing Visual C++ Redistributable!\nPlease install VC++ 2015-2022 Redistributable", L"Error", MB_OK);
+        return 1;
+    }
+    FreeLibrary(vcruntime);
     
     if (!IsRunningAsAdmin()) {
         std::wcout << L"===============================================" << std::endl;

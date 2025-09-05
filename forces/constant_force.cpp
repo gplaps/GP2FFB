@@ -244,7 +244,10 @@ void ApplyConstantForceEffect(const RawTelemetry& current,
 
      double frontTireLoadSum = (std::abs(leftForce) - std::abs(rightForce)) + frontTireLongSum;
 
-    // frontTireLoadSum = frontTireLongSum;
+   // double frontTireLoadSum = leftForce + rightForce + frontTireLongSum;
+
+
+    // double frontTireLoadSum = frontTireLongSum;
 
     //double frontTireLoadSum = std::abs(vehicleDynamics.frontLeftForce_N) - std::abs(vehicleDynamics.frontRightForce_N);
 
@@ -252,7 +255,7 @@ void ApplyConstantForceEffect(const RawTelemetry& current,
     //double frontTireLoadSum = frontTireLongSum;
 
     // === Input Smoothing ===
-    static double smoothedFrontTireLoadSum = 0.0;
+/*    static double smoothedFrontTireLoadSum = 0.0;
     static bool inputInitialized = false;
     const double INPUT_SMOOTHING = 0.4;  // Adjust 0.1-0.4 based on preference
 
@@ -264,6 +267,23 @@ void ApplyConstantForceEffect(const RawTelemetry& current,
         smoothedFrontTireLoadSum = (INPUT_SMOOTHING * frontTireLoadSum) +
             ((1.0 - INPUT_SMOOTHING) * smoothedFrontTireLoadSum);
     }
+*/
+
+// === IMPROVED SMOOTHING WITH MULTIPLE STRATEGIES ===
+
+     static double smoothedFrontTireLoadSum = 0.0;
+     static bool inputInitialized = false;
+     const double INPUT_SMOOTHING = 0.4;  // Adjust 0.1-0.4 based on preference
+
+     if (!inputInitialized) {
+         smoothedFrontTireLoadSum = frontTireLoadSum;
+         inputInitialized = true;
+     }
+     else {
+         smoothedFrontTireLoadSum = (INPUT_SMOOTHING * frontTireLoadSum) +
+             ((1.0 - INPUT_SMOOTHING) * smoothedFrontTireLoadSum);
+     }
+
 
     // Use smoothed input for all calculations
    // double frontTireLoadMagnitude = std::abs(smoothedFrontTireLoadSum);
@@ -323,9 +343,7 @@ void ApplyConstantForceEffect(const RawTelemetry& current,
 
 
     double physicsForceMagnitude;
-
-    // Curve Parameters
-    // Added step for greater center feel
+    
     const double STEEP_THRESHOLD = 1500.0;     // Switch point: 1500N
     const double STEEP_FORCE_TARGET = 2500.0;  // Force at switch point: 2000
     const double GENTLE_LOAD_TARGET = 20000.0; // High load point: 14000N
@@ -358,6 +376,48 @@ void ApplyConstantForceEffect(const RawTelemetry& current,
 
 
     double force = physicsForce;
+
+    //== LOG Curve, too 'notchy'
+    /*
+    // Curve Parameters
+    // Added step for greater center feel
+    const double LOG_SCALE = 0.01; // Curve steepness
+    const double STEEP_THRESHOLD = 1800.0; // Transition Point
+    const double STEEP_FORCE_TARGET = 2500.0; // FFB % at transition
+    const double GENTLE_LOAD_TARGET = 18000.0; // Max Load
+    const double GENTLE_FORCE_TARGET = 9800.0; // FFB % at max load
+    const double GENTLE_SLOPE = (GENTLE_FORCE_TARGET - STEEP_FORCE_TARGET) / (GENTLE_LOAD_TARGET - STEEP_THRESHOLD);
+
+
+    if (frontTireLoadMagnitude <= STEEP_THRESHOLD) {
+        // Logarithmic portion (smooth curve from 0 to transition point)
+        // Excel formula: $E$3 * (LN(1 + A2 * $E$1) / LN(1 + $E$2 * $E$1))
+
+        //log
+        double numerator = log(1.0 + frontTireLoadMagnitude * LOG_SCALE);
+        double denominator = log(1.0 + STEEP_THRESHOLD * LOG_SCALE);
+
+        //exp
+
+        //double numerator = (exp(LOG_SCALE * frontTireLoadMagnitude / STEEP_THRESHOLD)) - 1;
+        //double denominator = exp(STEEP_THRESHOLD) - 1;
+
+        physicsForceMagnitude = STEEP_FORCE_TARGET * (numerator / denominator);
+    }
+    else {
+        // Linear portion after transition point
+        // Excel formula: ((A2-$E$2)*$H$5)+$E$3
+
+        double remainingLoad = frontTireLoadMagnitude - STEEP_THRESHOLD;
+        physicsForceMagnitude = (remainingLoad * GENTLE_SLOPE) + STEEP_FORCE_TARGET;
+
+    }
+
+    // Apply the original sign from frontTireLoadSum
+    double physicsForce = (frontTireLoadSum >= 0) ? physicsForceMagnitude : -physicsForceMagnitude;
+
+    double force = physicsForce;
+*/
 
     // Apply proportional deadzone
     if (deadzoneForceScale > 0.0) {
@@ -636,7 +696,7 @@ void ApplyConstantForceEffect(const RawTelemetry& current,
 
     //Logging
     static int debugCounter = 0;
-    if (debugCounter % 30 == 0) {  // Every 30 frames
+    if (debugCounter % 1 == 0) {  // Every 30 frames
         LogMessage(L"[DEBUG] FL: " + std::to_wstring(vehicleDynamics.frontLeftForce_N) +
             L", FR: " + std::to_wstring(vehicleDynamics.frontRightForce_N) +
             L", Total: " + std::to_wstring(frontTireLoad) +
